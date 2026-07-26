@@ -8,6 +8,14 @@
 
 所有 WorkBuddy Worker 会话在首次 prompt 前设置为 `fullAccess`。工具直接执行而不询问；若 WorkBuddy 仍发出 ACP 权限请求，桥接器选择 `allow_always`。身份行为边界由各角色提示词约束，不再由工具权限层强制。
 
+## WorkBuddy 会话界面示例
+
+通过桥接器派发 `online-search` 后，WorkBuddy 会在自己的会话界面中显示角色提示词、任务内容和最终整理结果；会话标题仍由 WorkBuddy 自动生成。
+
+<p align="center">
+  <img src="docs/images/workbuddy-session-example.png" alt="WorkBuddy online-search 会话界面示例" width="820">
+</p>
+
 ## MCP 工具
 
 - `workbuddy_status`：检查桌面连接或任务状态
