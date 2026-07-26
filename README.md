@@ -1,6 +1,6 @@
 # Codex WorkBuddy Desktop Bridge
 
-简单说：让 Codex 负责理解需求、拆分任务和汇总结果，WorkBuddy 作为本地执行子代理，负责联网搜索、代码审查等具体工作；两者通过 MCP 桥接器协作。
+##简单说：让 Codex 负责理解需求、拆分任务和汇总结果，WorkBuddy 作为本地执行子代理，负责联网搜索、代码审查等具体工作；两者通过 MCP 桥接器协作。
 
 本项目把当前正在运行的 WorkBuddy 桌面 Agent 暴露为 Codex 可调用的本地 MCP Worker。
 
