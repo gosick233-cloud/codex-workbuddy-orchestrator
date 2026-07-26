@@ -1,0 +1,4 @@
+interface:
+  display_name: "WorkBuddy Agent Routing"
+  short_description: "Route research, reviews, and re-reviews through WorkBuddy"
+  default_prompt: "Use $workbuddy-agent-routing to delegate this task or resume its prior WorkBuddy review."
