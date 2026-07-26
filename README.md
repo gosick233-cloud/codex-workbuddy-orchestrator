@@ -16,6 +16,90 @@
 - `workbuddy_cancel`：取消任务
 - `workbuddy_list`：列出桥接器进程内的任务
 
+## 身份角色与配置
+
+桥接器内置四个身份。`identity` 只选择角色，角色的完整提示词由桥接器从
+`workbuddy_bridge/identities.py` 注入；调用方不需要每次重复发送身份说明。
+
+| 身份 | 默认职责 | 支持复用旧审查会话 |
+| --- | --- | --- |
+| `online-search` | 联网检索、资料核对、来源整理 | 否 |
+| `S1` | 语法、拼写、明显代码错误和低级问题 | 是 |
+| `S2` | 依赖漏洞、供应链和高风险依赖检查 | 是 |
+| `S3` | 命名、格式、结构和可维护性检查 | 是 |
+
+角色提示词只负责定义行为边界和输出要求。所有 Worker 会话仍然使用
+`fullAccess`，工具不会逐次询问权限；如果需要限制工具能力，必须同时修改权限配置，
+不能只依赖角色提示词。
+
+### 调用时可以覆盖的参数
+
+`workbuddy_start` 支持以下与角色相关的参数：
+
+```json
+{
+  "identity": "S2",
+  "model": "deepseek-v4-flash",
+  "reasoning_effort": "low",
+  "cwd": "C:\\path\\to\\project",
+  "timeout_seconds": 300,
+  "prompt": "检查这个项目的依赖风险，不要修改文件。"
+}
+```
+
+- `identity`：填写 `online-search`、`S1`、`S2` 或 `S3`；也接受 `online_search`、`s1`、
+  `s2`、`s3` 这些别名。省略时保留自由 prompt 的兼容行为。
+- `model`：指定 WorkBuddy 模型。省略时，临时 Host 默认使用
+  `deepseek-v4-flash`。
+- `reasoning_effort`：传递 WorkBuddy 的推理强度，例如 `low`、`medium`、`high` 或
+  `max`；省略时使用 WorkBuddy 当前默认值。通过路由技能调用时，可在技能配置中统一传入
+  `low`。
+- `cwd`：任务的绝对工作目录；省略时使用桥接器进程当前目录。审查任务应明确传入项目目录。
+- `timeout_seconds`：单个 WorkBuddy 任务的最长执行时间，默认 300 秒。
+- `review_target`、`resume_review`、`resume_session_id`：仅用于 S1/S2/S3 的审查复用，
+  规则见[审查与复审](#审查与复审)。
+
+### 修改现有角色或新增角色
+
+直接编辑 `workbuddy_bridge/identities.py` 中的 `IDENTITIES` 字典即可修改角色提示词。
+例如新增一个专门检查测试的身份：
+
+```python
+IDENTITIES = {
+    # 保留现有 online-search、S1、S2、S3 …
+    "S4": """你是 S4，负责测试质量检查。
+
+重点检查：
+- 测试是否覆盖关键路径
+- 断言是否有效
+- 是否存在明显的漏测和脆弱测试
+
+不要修改文件，只返回审查结果。""",
+}
+
+_IDENTITY_ALIASES = {
+    # 保留现有别名 …
+    "s4": "S4",
+}
+```
+
+新增角色后还需要：
+
+1. 在 `_IDENTITY_ALIASES` 中加入至少一个规范化入口，否则 `workbuddy_start` 会拒绝该身份。
+2. 如果该角色也需要复用旧审查会话，把它加入 `workbuddy_bridge/review_sessions.py` 的
+   `REVIEW_IDENTITIES`，并为它设计同样的“回归检查 + 增量检查”规则。
+3. 如果使用 Codex 的 `workbuddy-agent-routing` 技能，还要同步修改该技能的身份列表和路由条件；
+   仅修改桥接器不会自动让 Codex 选择新角色。
+4. 运行测试确认身份名、提示词拼接和复审约束没有回归：
+
+```powershell
+python -m unittest discover -s workbuddy_bridge -p 'test_*.py' -v
+python -m compileall -q workbuddy_bridge
+```
+
+不要把 API 密钥、个人绝对路径、WorkBuddy 会话内容或用户数据写进角色提示词。角色定义会随
+仓库公开；运行时日志和本地会话注册表位于被 `.gitignore` 排除的目录中。
+
 ## 手动连通测试
 
 ```powershell
